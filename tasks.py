@@ -17,13 +17,12 @@ class CrcTask:
         self.complete = False
         self.result = None
 
-def make_crctasks(filename, start, end):
+def add_crctasks(jobq, filename, start, end):
     tasks = []
     for n in range(start, end):
-        tasks.append(CrcTask(filename, n, end))
+        jobq.put(CrcTask(filename, n, end))
         print("%s: %d to %d" % (filename, n, end))
-    print len(tasks)
-    return tasks
+    print jobq.qsize()
 
 def make_nums(N):
     """ 
@@ -34,21 +33,23 @@ def make_nums(N):
         nums.append(nums[-1] + 2)
     return nums
 
-def calcChecksum(MAX):
-	savefile = "/Users/spanky/Dropbox/ctf/gamecube/memorycards/bak.raw"
-	save = open(savefile, 'rb').read()
+#TODO: We want to use only a shared string as input?
+def calcChecksum(crctask):
+    savefile = "/Users/spanky/Dropbox/ctf/gamecube/memorycards/bak.raw"
+    save = open(savefile, 'rb').read()
 
-	MIN = 0
-	#MAX = len(save)/100
+    start = crctask.start
+    end = crctask.end
+    #MAX = len(save)/100
 
-	#for n in range(0, len(save)):
-	#for n in range(0, 26477):
-	for n in range(MIN, MAX):
-		print("Checking offset [%d/%d] (%f percent)" % (n, len(save), float(n)/float(MAX)*100))
-		input = save[0:n]
-		crc = CRCCCITT().calculate(input)
-		#print(crc)
-	return 'blah'
+    #for n in range(0, len(save)):
+    #for n in range(0, 26477):
+    for n in range(start, end):
+        print("Checking offset [%d/%d] (%f percent)" % (n, len(save), float(n)/float(end)*100))
+        input = save[0:n]
+        crc = CRCCCITT().calculate(input)
+        #print(crc)
+    return 'blah'
 
 if __name__ == "__main__":
     make_crctasks("/tmp/barf.txt", 0, 255)

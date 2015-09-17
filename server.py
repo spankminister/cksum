@@ -4,22 +4,14 @@ from multiprocessing.managers import SyncManager
 import time
 import Queue
 
-from PyCRC.CRCCCITT import CRCCCITT
+import tasks
 
 BEGIN_OFFSET = 0
-END_OFFSET = 1
-FILE = "/Users/spanky/Dropbox/ctf/gamecube/memorycards/bak.raw"
+END_OFFSET = 100
+SAVEFILE = "/Users/spanky/Dropbox/ctf/gamecube/memorycards/bak.raw"
 
 PORTNUM=1337
 AUTHKEY = "asdf"
-
-def make_nums(N):
-    """ Create N large numbers to factorize.
-    """
-    nums = [999999999999]
-    for i in xrange(N):
-        nums.append(nums[-1] + 2)
-    return nums
 
 def make_server_manager(port, authkey):
     """ Create a manager for the server, listening on the given port.
@@ -49,30 +41,27 @@ def runserver():
     shared_result_q = manager.get_result_q()
 
     # Add tasks
-    #add_tasks()
-    N = 999
-    nums = make_nums(N)
+    crctasks = tasks.add_crctasks(shared_job_q, SAVEFILE,BEGIN_OFFSET, END_OFFSET)
 
-    # The numbers are split into chunks. Each chunk is pushed into the job
-    # queue.
-    chunksize = 43
-    for i in range(0, len(nums), chunksize):
-        shared_job_q.put(nums[i:i + chunksize])
+    #TODO: Check all tasks in the result DB and remove 
+    #       ones that have already been completed.
+
+    # We may need to do further chunking here
+    #shared_job_q.put(crctasks)
 
     # Wait until all results are ready in shared_result_q
-    numresults = 0
     resultdict = {}
     try:
-        while numresults < N:
+        while True:
+            import code
+            #code.interact(local=locals())
             outdict = shared_result_q.get()
             resultdict.update(outdict)
-            numresults += len(outdict)
-    except KeyboardException:
+    except KeyboardInterrupt:
         print("Caught CTRL+C, Exiting...")
 
     finally:
-        # Sleep a bit before shutting down the server - to give clients time to
-        # realize the job queue is empty and exit in an orderly way.
+        # Sleep a bit so clients can exit gracefully       
         time.sleep(2)
         manager.shutdown()
 

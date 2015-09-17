@@ -3,6 +3,8 @@ from multiprocessing.managers import SyncManager
 import time
 import Queue
 
+import tasks
+
 IP="127.0.0.1"
 PORTNUM=1337
 AUTHKEY = "asdf"
@@ -45,17 +47,19 @@ def factorizer_worker(job_q, result_q):
     """
     while True:
         try:
-            job = job_q.get_nowait()
-            outdict = {n: factorize_naive(n) for n in job}
+            #job = job_q.get_nowait()
+            #outdict = {n: factorize_naive(n) for n in job}
+            crctask = job_q.get_nowait()
+            outdict = tasks.calcChecksum(crctask)
+            
             result_q.put(outdict)
         except Queue.Empty:
             return
 
 def mp_factorizer(shared_job_q, shared_result_q, nprocs):
-    """ Split the work with jobs in shared_job_q and results in
-        shared_result_q into several processes. Launch each process with
-        factorizer_worker as the worker function, and wait until all are
-        finished.
+    """ 
+    Create worker processes with target function,
+    wait until all are finished
     """
     procs = []
     for i in range(nprocs):
@@ -72,6 +76,9 @@ def runclient():
     manager = make_client_manager(IP, PORTNUM, AUTHKEY)
     job_q = manager.get_job_q()
     result_q = manager.get_result_q()
+    import code
+    code.interact(local=locals())
+    print "I see the job q as %d elements" % job_q.qsize()
     mp_factorizer(job_q, result_q, 4)
 
 def make_client_manager(ip, port, authkey):
